@@ -1,60 +1,36 @@
-const bcrypt = require("bcrypt");
-const { sign } = require("../utils/auth");
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const pool = require('../utils/db');
 
-let users = [
-  {
-    id: 1,
-    email: "admin@joyeria.com",
-    password: "12345", 
-    role: "admin"
-  }
-]; 
+const SECRET = 'Joyeriadulceee'; // o mejor en .env
 
-const login = async (req, res) => {
+router.post('/create', async (req, res) => {
   const { email, password } = req.body;
-
-  const user = users.find(u => u.email === email);
-
-  if (!user) {
-    return res.status(401).json({ message: "Credenciales inválidas" });
+  try {
+    const result = await pool.query(
+      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
+      [email, password]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
+});
 
-  const valid = await bcrypt.compare(password, user.password);
-
-  if (!valid) {
-    return res.status(401).json({ message: "Credenciales inválidas" });
-  }
-
-  const token = sign({ id: user.id, role: user.role });
-
-  res.json({ token });
-};
-
-const register = async (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email y contraseña requeridos" });
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
+    }
+    const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '1h' });
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
+});
 
-  const exists = users.find(u => u.email === email);
-
-  if (exists) {
-    return res.status(400).json({ message: "Usuario ya existe" });
-  }
-
-  const hashed = await bcrypt.hash(password, 10);
-
-  const newUser = {
-    id: users.length + 1,
-    email,
-    password: hashed,
-    role: "user"
-  };
-
-  users.push(newUser);
-
-  res.status(201).json({ id: newUser.id, email: newUser.email });
-};
-
-module.exports = { login, register };
+module.exports = router;

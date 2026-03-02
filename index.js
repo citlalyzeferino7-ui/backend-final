@@ -1,24 +1,15 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+
+const usersRouter = require('./src/routes/users.routes');
+const joyasRouter = require('./src/routes/joyas.routes');
 
 const app = express();
+app.use(cors());
+app.use(bodyParser.json());
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
-  credentials: true
-}));
+app.use('/users', usersRouter);
+app.use('/joyas', joyasRouter);
 
-app.use(express.json());
-
-app.use("/api/users", require("./src/routes/users.routes"));
-app.use("/api/productos", require("./src/routes/productos.routes"));
-
-const errorHandler = require("./src/middlewares/error.middleware");
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-});
+app.listen(3001, () => console.log('Servidor corriendo en http://localhost:3001'));

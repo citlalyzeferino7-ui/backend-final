@@ -1,26 +1,25 @@
 const jwt = require('jsonwebtoken');
 
-// Middleware para verificar el token JWT
 module.exports = (role) => {
   return (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      return res.status(401).json({ error: 'No se encontró el token' });
+      return res.status(401).json({ error: 'No token proporcionado' });
     }
 
     const token = authHeader.split(' ')[1];
+
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded;
-      
-      // Verificar el rol si es necesario
-      if (role && req.user.role !== role) {
-        return res.status(403).json({ error: 'No tienes permisos' });
+
+      if (role && decoded.role !== role) {
+        return res.status(403).json({ error: 'No autorizado' });
       }
 
+      req.user = decoded;
       next();
-    } catch (error) {
+    } catch (err) {
       return res.status(403).json({ error: 'Token inválido' });
     }
   };
