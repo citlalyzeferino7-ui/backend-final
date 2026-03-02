@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 .env
 .env.local
 node_modules/
 .DS_Store
 dist/
+=======
+# Auto detect text files and perform LF normalization
+* text=auto
+>>>>>>> 10f027e5129a7bc45e5ae71c2745728f2d02b5d1
