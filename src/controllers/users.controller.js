@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const pool = require('../utils/db');
 
-const SECRET = 'Joyeriadulceee'; // o mejor en .env
+const SECRET = process.env.JWT_SECRET;
 
 router.post('/create', async (req, res) => {
   const { email, password } = req.body;
@@ -32,5 +32,6 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 module.exports = router;

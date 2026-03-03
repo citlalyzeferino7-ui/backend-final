@@ -1,33 +1,41 @@
-const { pool } = require('../utils/db');
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const pool = require('../utils/db');
 
-class UsersRepository {
+const router = express.Router();
 
-  // Buscar un usuario por su correo electrónico
-  async findByEmail(email) {
-    const result = await pool.query(
-      'SELECT id, email, password_hash, role FROM users WHERE email = $1',
-      [email]
-    );
-    return result.rows[0] || null;
+router.post('/create', async (req, res) => {
+  const { email, password } = req.body;
+
+  const result = await pool.query(
+    'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
+    [email, password]
+  );
+
+  res.json(result.rows[0]);
+});
+
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  const result = await pool.query(
+    'SELECT * FROM users WHERE email = $1',
+    [email]
+  );
+
+  const user = result.rows[0];
+
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: 'Credenciales incorrectas' });
   }
 
-  // Crear un nuevo usuario
-  async create({ email, passwordHash, role = 'user' }) {
-    const result = await pool.query(
-      'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id, email, role',
-      [email, passwordHash, role]
-    );
-    return result.rows[0];
-  }
+  const token = jwt.sign(
+    { id: user.id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
 
-  // Obtener un usuario por su ID
-  async findById(id) {
-    const result = await pool.query(
-      'SELECT id, email, role FROM users WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
-  }
-}
+  res.json({ token });
+});
 
-module.exports = { UsersRepository };
+module.exports = router;
